@@ -14,9 +14,27 @@ bool LockManagerA::WriteLock(Txn* txn, const Key& key) {
   // CPSC 438/538:
   //
   // Implement this method!
+  bool cek;
+  cek = true;
 
   LockRequest LR(EXCLUSIVE, txn);
-  return true;
+  if (lock_table_.count(key)) {
+    lock_table_[key] -> push_back(LR); 
+  } else {
+    deque<LockRequest> *database = new deque<LockRequest>(1, LR);
+    lock_table_[key] = database;
+  }
+
+  if (lock_table_[key]->size() != 1){
+    if (txn_waits_.count(txn)) {
+      txn_waits_[txn] = 1;
+    } else {
+      txn_waits_[txn]++;
+    }
+    cek = false;
+  }
+
+  return cek;
 }
 
 bool LockManagerA::ReadLock(Txn* txn, const Key& key) {
