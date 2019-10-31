@@ -14,6 +14,8 @@ bool LockManagerA::WriteLock(Txn* txn, const Key& key) {
   // CPSC 438/538:
   //
   // Implement this method!
+
+  LockRequest LR(EXCLUSIVE, txn);
   return true;
 }
 
