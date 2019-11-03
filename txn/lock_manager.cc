@@ -13,18 +13,25 @@ LockManagerA::LockManagerA(deque<Txn*>* ready_txns) {
 bool LockManagerA::WriteLock(Txn* txn, const Key& key) {
   // CPSC 438/538:
   //
-  // Implement this method!
+  
   bool cek;
   cek = true;
 
+  //request exclusive lock
   LockRequest LR(EXCLUSIVE, txn);
+
+  // check if the lock is empty or not
+  // if the lock is empty for the current element, then make a new lock request
+  // if not empty then push lock into deque
   if (lock_table_.count(key)) {
     lock_table_[key] -> push_back(LR); 
   } else {
-    deque<LockRequest> *database = new deque<LockRequest>(1, LR);
-    lock_table_[key] = database;
+    deque<LockRequest> *dreq = new deque<LockRequest>(1, LR);
+    lock_table_[key] = dreq;
   }
 
+  // if the size of lock table is not 1, then transaction needs to hold longer to be release
+  // if the size is one then, transaction write successfully.
   if (lock_table_[key]->size() != 1){
     if (txn_waits_.count(txn)) {
       txn_waits_[txn] = 1;
@@ -45,8 +52,15 @@ bool LockManagerA::ReadLock(Txn* txn, const Key& key) {
 
 void LockManagerA::Release(Txn* txn, const Key& key) {
   // CPSC 438/538:
-  //
-  // Implement this method!
+  // chcek if the transaction hold a lock
+  bool cek;
+
+  // trnsaction request key
+  // deque<LockRequest> *re
+
+  
+
+
 }
 
 LockMode LockManagerA::Status(const Key& key, vector<Txn*>* owners) {
