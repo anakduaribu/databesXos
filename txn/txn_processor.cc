@@ -383,13 +383,9 @@ void TxnProcessor::RunMVCCScheduler() {
   RunSerialScheduler();
 }
 
-bool TxnProcessor::MVCCCheckWrites(const Txn &txn) const{
-  for (auto&& key : txn.writeset_) {
-    storage_->Lock(key);
-  }
-
-  for (auto&& key : txn.writeset_) {
-    if (!storage_->CheckWrite(key, txn.unique_id_))
+bool TxnProcessor::MVCCCheckWrites(Txn* txn){
+  for (auto&& key : txn->writeset_) {
+    if (!storage_->CheckWrite(key, txn->unique_id_))
       return false;
   }
 
