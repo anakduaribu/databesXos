@@ -30,3 +30,14 @@ obj/txn/lock_manager_test.d
 obj/txn/lock_manager_test.o
 obj/txn/mvcc_storage.d
 obj/txn/mvcc_storage.o
+bin/txn/lock_manager_test
+bin/txn/txn_processor_test
+obj/.deps
+obj/txn/lock_manager.d
+obj/txn/lock_manager.o
+obj/txn/mvcc_storage.d
+obj/txn/mvcc_storage.o
+obj/txn/txn_processor.d
+obj/txn/txn_processor.o
+obj/txn/txn_processor_test.d
+obj/txn/txn_processor_test.o
