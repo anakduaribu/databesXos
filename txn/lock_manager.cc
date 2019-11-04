@@ -52,7 +52,7 @@ bool LockManagerA::ReadLock(Txn* txn, const Key& key) {
 
 void LockManagerA::Release(Txn* txn, const Key& key) {
   // Whether the removed trasaction had a lock
-  bool cek = true;
+  bool cek;
 
   // The transaction requests for the key
   deque<LockRequest> *req = lock_table_[key];
