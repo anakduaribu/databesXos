@@ -285,6 +285,18 @@ void TxnProcessor::RunOCCParallelScheduler() {
   RunSerialScheduler();
 }
 
+void TxnProcessor::MVCCLockWriteKeys(Txn* txn){
+  for (set<Key>::iterator it = txn->readset_.begin();
+       it != txn->readset_.end(); ++it) {
+		
+		storage_->Lock(*it);
+  }
+}
+
+void TxnProcessor::MVCCExecuteTxn(Txn* txn){
+
+}
+
 void TxnProcessor::RunMVCCScheduler() {
   // CPSC 438/538:
   //
@@ -295,6 +307,8 @@ void TxnProcessor::RunMVCCScheduler() {
   //
   // [For now, run serial scheduler in order to make it through the test
   // suite]
+
+
   RunSerialScheduler();
 }
 
