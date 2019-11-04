@@ -52,6 +52,8 @@ bool MVCCStorage::Read(Key key, Value* result, int txn_unique_id) {
 
   Version * max_timestamp;
 
+  bool is_found = false;
+
   for (deque<Version*>::iterator it = version_of_key->begin(); it!=version_of_key->end(); ++it){
 		  
     Version* v = *it;
@@ -61,24 +63,24 @@ bool MVCCStorage::Read(Key key, Value* result, int txn_unique_id) {
       if(max_timestamp != NULL){
         if(v->version_id_ > max_timestamp->version_id_){
           max_timestamp = v;
+          is_found = true;
+          
         }
       }else{
         max_timestamp = v;
+        is_found = true;
+
       }
     }
   }
 
-  if(max_timestamp != NULL){
+  if(is_found){
 		*result = max_timestamp->value_;
-
-		if(max_timestamp->max_read_id_ < txn_unique_id){
+		if(max_timestamp->max_read_id_ < txn_unique_id)
 			max_timestamp->max_read_id_ = txn_unique_id;
-    }
 		return true;
-
-	}else{
+	}else
 		return false;
-  }
 
 }
 
