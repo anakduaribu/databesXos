@@ -61,7 +61,7 @@ void LockManagerA::Release(Txn* txn, const Key& key) {
   // if front of the deque is txn then Remove the txn from requests
   deque<LockRequest>::iterator itr;
   for (itr = req->begin(); itr != req->end(); itr++) {
-    if (i->txn_ == txn) {
+    if (itr->txn_ == txn) {
       if (req->front().txn_ == txn) {
         cek = true;
         req->erase(itr);
