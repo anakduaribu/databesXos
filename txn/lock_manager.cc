@@ -52,25 +52,35 @@ bool LockManagerA::ReadLock(Txn* txn, const Key& key) {
 
 void LockManagerA::Release(Txn* txn, const Key& key) {
   // Whether the removed trasaction had a lock
-  bool hadLock;
+  bool cek;
 
   // The transaction requests for the key
-  deque<LockRequest> *requests = lock_table_[key];
+  deque<LockRequest> *req = lock_table_[key];
 
-  // Remove the txn from requests
-  deque<LockRequest>::iterator i;
-  for (i = requests->begin(); i != requests->end(); i++) {
+  // check the deque from begin to end,
+  // if front of the deque is txn then Remove the txn from requests
+  deque<LockRequest>::iterator itr;
+  for (itr = req->begin(); itr != req->end(); i++) {
     if (i->txn_ == txn) {
-      hadLock = (requests->front().txn_ == txn);
-      requests->erase(i);
+      if (req->front().txn_ == txn) {
+        cek = true;
+        req->erase(itr);
+      }
+      // cek = (req->front().txn_ == txn);
+      // req->erase(i);
       break;
     }
   }
 
   // Start the next txn if it acquired the lock
-  if (requests->size() >= 1 && hadLock) {
-    Txn *to_start = requests->front().txn_;
-    if (--txn_waits_[to_start] == 0) ready_txns_->push_back(to_start);
+  if (req->size() >= 1 && cek) {
+    Txn *n_lock = req->front().txn_;
+    txn_waits_[n_lock]--;
+    if (txn_waits_[n_lock] <= 0) {
+      ready_txns_->push_back(n_lock);
+      txn_waits_.erase(n_lock);
+    }
+    // if (--txn_waits_[n_lock] == 0) ready_txns_->push_back(n_lock);
   }
 }
 
