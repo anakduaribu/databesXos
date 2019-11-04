@@ -51,38 +51,26 @@ bool LockManagerA::ReadLock(Txn* txn, const Key& key) {
 }
 
 void LockManagerA::Release(Txn* txn, const Key& key) {
-  // CPSC 438/538:
-  // chcek if the transaction hold a lock
-  bool cek = false;
+  // Whether the removed trasaction had a lock
+  bool hadLock;
 
-  // trnsaction request key
-  deque<LockRequest> *req = lock_table_[key];
+  // The transaction requests for the key
+  deque<LockRequest> *requests = lock_table_[key];
 
-  // looping with iterotor to find the transaction from the lock request
-  deque<LockRequest>::iterator itr;
-  for (itr = req->begin(); itr != req->end(); itr++) {
-    // check if the transaction still in the deque
-    if (itr->txn_ == txn){
-      // delete the transaction from request
-      // delete happen if the transaction in the front of the deque
-      if (req->front().txn_ == txn) {
-        cek = true;
-        req->erase(itr);
-        break;
-      }
+  // Remove the txn from requests
+  deque<LockRequest>::iterator i;
+  for (i = requests->begin(); i != requests->end(); i++) {
+    if (i->txn_ == txn) {
+      hadLock = (requests->front().txn_ == txn);
+      requests->erase(i);
+      break;
     }
   }
 
-  // if the deque not empty, start the next transaction to accept lock
-  if (req->size() >= 1 && cek) {
-    // make the next transaction to front of the deque, and reduce the wait time for the next transaction
-    Txn *n_lock= req->front().txn_;
-    txn_waits_[n_lock]--;
-
-    // check if already 0, then transaction is release
-    if (txn_waits_[n_lock] == 0) {
-      ready_txns_->push_back(n_lock);
-    }
+  // Start the next txn if it acquired the lock
+  if (requests->size() >= 1 && hadLock) {
+    Txn *to_start = requests->front().txn_;
+    if (--txn_waits_[to_start] == 0) ready_txns_->push_back(to_start);
   }
 }
 
