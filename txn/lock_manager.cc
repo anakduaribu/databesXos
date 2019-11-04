@@ -52,7 +52,7 @@ bool LockManagerA::ReadLock(Txn* txn, const Key& key) {
 
 void LockManagerA::Release(Txn* txn, const Key& key) {
   // Whether the removed trasaction had a lock
-  bool cek;
+  bool cek = true;
 
   // The transaction requests for the key
   deque<LockRequest> *req = lock_table_[key];
@@ -62,14 +62,15 @@ void LockManagerA::Release(Txn* txn, const Key& key) {
   deque<LockRequest>::iterator itr;
   for (itr = req->begin(); itr != req->end(); itr++) {
     if (itr->txn_ == txn) {
-      if (req->front().txn_ == txn) {
-        cek = false;
-        req->erase(itr);
-      }
-      // cek = (req->front().txn_ == txn);
-      // req->erase(i);
+      // if (req->front().txn_ == txn) {
+      //   cek = false;
+      // }
+      // req->erase(itr);
+      cek = (req->front().txn_ == txn);
+      req->erase(itr);
       break;
     }
+    // cek = false;
   }
 
   // Start the next txn if it acquired the lock
