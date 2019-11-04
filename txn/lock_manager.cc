@@ -1,5 +1,5 @@
 // Author: Alexander Thomson (thomson@cs.yale.edu)
-// Modified by: Kun Ren (kun.ren@yale.edu)
+// Modified by: Yudy Valentino
 //
 // Lock manager implementing deterministic two-phase locking as described in
 // 'The Case for Determinism in Database Systems'.

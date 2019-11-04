@@ -1,6 +1,5 @@
 // Author: Alexander Thomson (thomson@cs.yale.edu)
-// Modified by: Christina Wallin (christina.wallin@yale.edu)
-// Modified by: Kun Ren (kun.ren@yale.edu)
+// Modified : Hilmi Naufal
 
 
 #include "txn/txn_processor.h"
