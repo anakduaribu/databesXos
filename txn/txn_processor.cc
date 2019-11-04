@@ -364,6 +364,14 @@ void TxnProcessor::MVCCLockWriteKeys(Txn* txn){
   }
 }
 
+void TxnProcessor::MVCCUnlockWriteKeys(Txn* txn) {
+  for (set<Key>::iterator it = txn->writeset_.begin();
+       it != txn->writeset_.end(); ++it) {
+		
+		storage_->Unlock(*it);
+  }
+}
+
 void TxnProcessor::MVCCExecuteTxn(Txn* txn){
 
   Value res;
@@ -385,7 +393,8 @@ void TxnProcessor::MVCCExecuteTxn(Txn* txn){
       txn->reads_[*it] = res;
 		
   }
-  //Unlock
+  
+  MVCCUnlockWriteKeys(txn);
 
   txn->Run();
 
@@ -398,11 +407,11 @@ void TxnProcessor::MVCCExecuteTxn(Txn* txn){
 			storage_->Write(it->first, it->second, txn->unique_id_);
 		}
 
-    //Unlock
+    MVCCUnlockWriteKeys(txn);
     txn_results_.Push(txn);
 
   }else{
-    //Unlock
+    MVCCUnlockWriteKeys(txn);
     // Clean up transaction
 	  txn->reads_.clear();
 	  txn->writes_.clear();
