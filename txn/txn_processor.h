@@ -64,8 +64,6 @@ class TxnProcessor {
  private:
   //Clean up txn
   void CleanUpTxn(Txn *checked_txn);
-  //Restart cleaned txn
-  void RestartTxn(Txn *txn, Txn *checked_txn);
   //OCC Txn TimeStamp Validation
   bool TxnFinishTimeValidation(const Txn &txn) const;
   // Serial validation

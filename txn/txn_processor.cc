@@ -267,6 +267,7 @@ bool TxnProcessor::TxnFinishTimeValidation(const Txn &txn) const{
     
     if ( txn.occ_start_time_ < storage_->Timestamp(record)){
       valid = false;
+      break;
     }
   }
   
@@ -276,6 +277,7 @@ bool TxnProcessor::TxnFinishTimeValidation(const Txn &txn) const{
       
       if ( txn.occ_start_time_ < storage_->Timestamp(record)){
         valid = false;
+        break;
       }
 
     }
@@ -290,18 +292,12 @@ void TxnProcessor::CleanUpTxn(Txn *checked_txn) {
     checked_txn->status_ = INCOMPLETE;
 }
 
-void TxnProcessor::RestartTxn(Txn *txn, Txn *checked_txn) {
-    mutex_.Lock();
-    txn->unique_id_ = next_unique_id_;
-    next_unique_id_++;
-    txn_requests_.Push(checked_txn);
-    mutex_.Unlock();
-}
+
 void TxnProcessor::RunOCCScheduler() {
   // CPSC 438/538:
   //
   // Implement this method!
-  // For transaction request
+  
   Txn *txn_request;
   while(tp_.Active()) {
     // new transaction request
@@ -312,30 +308,41 @@ void TxnProcessor::RunOCCScheduler() {
     }
 
     //dealing with finished transaction
-    Txn *finished_txn;  
+    Txn *finished_txn;
     while (completed_txns_.Pop(&finished_txn)) {
-      //check is the record was last updated 
-      //AFTER this transaction's start time or not
-      bool valid = TxnFinishTimeValidation(*finished_txn);
+      
+      if (finished_txn->Status() == COMPLETED_C) {
+        
+        //check is the record was last updated 
+        //AFTER this transaction's start time or not
+        bool valid = TxnFinishTimeValidation(*finished_txn);
+        //test cek
+        
+        ///////
+        if (valid){
+        //commit transaction
+          ApplyWrites(finished_txn);
+          finished_txn->status_ = COMMITTED;
+        }
+        else {
+          CleanUpTxn(finished_txn);
+          NewTxnRequest(finished_txn);
+          continue;
+        }
 
-    if (valid){
-      //commit transaction
-      ApplyWrites(finished_txn);
-      txn_request->status_ = COMMITTED;
+      }
+      else if (finished_txn->Status() == COMPLETED_A) {
+        finished_txn->status_ = ABORTED;
+      }
+      else {
+        // Invalid TxnStatus!
+        DIE("Completed Txn has invalid TxnStatus: " << finished_txn->Status());
+      }
+      
+      txn_results_.Push(finished_txn);
     }
-    else {
-      CleanUpTxn(finished_txn);
-      RestartTxn(txn_request,finished_txn);
-    }
-
-    txn_results_.Push(finished_txn);
-
-
   }
 
-
-
-  }
   // [For now, run serial scheduler in order to make it through the test
   // suite]
 
