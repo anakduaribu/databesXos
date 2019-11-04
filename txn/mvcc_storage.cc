@@ -65,7 +65,16 @@ bool MVCCStorage::CheckWrite(Key key, int txn_unique_id) {
   // Note that you don't have to call Lock(key) in this method, just
   // call Lock(key) before you call this method and call Unlock(key) afterward.
   
-  
+    deque<Version*>* version_of_key = mvcc_data_[key];
+
+    for (deque<Version*>::iterator it = version_of_key->begin(); it!=version_of_key->end(); ++it){
+		  
+      Version* v = *it;
+	
+      if(v->version_id_ > txn_unique_id || v->max_read_id_ > txn_unique_id){
+        return false;
+      }
+    }
   return true;
 }
 

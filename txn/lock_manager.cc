@@ -74,7 +74,7 @@ void LockManagerA::Release(Txn* txn, const Key& key) {
   }
 
   // if the deque not empty, start the next transaction to accept lock
-  if (req->size() >= 1 & cek) {
+  if (req->size() >= 1 && cek) {
     // make the next transaction to front of the deque, and reduce the wait time for the next transaction
     Txn *n_lock= req->front().txn_;
     txn_waits_[n_lock]--;
