@@ -90,7 +90,21 @@ LockMode LockManagerA::Status(const Key& key, vector<Txn*>* owners) {
   // CPSC 438/538:
   //
   // Implement this method!
-  return UNLOCKED;
+  
+  // transaction request key
+  deque<LockRequest> *req = lock_table_[key];
+
+  //check transaction req if not 0m then exclusive is return 
+  if (req->size() != 0) {
+    owners->clear();
+    owners->push_back(req->front().txn_);
+  }
+
+  if (owners->empty()) {
+    return UNLOCKED;
+  } else {
+    return EXCLUSIVE;
+  }
 }
 
 LockManagerB::LockManagerB(deque<Txn*>* ready_txns) {
