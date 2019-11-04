@@ -357,14 +357,65 @@ void TxnProcessor::RunOCCParallelScheduler() {
 }
 
 void TxnProcessor::MVCCLockWriteKeys(Txn* txn){
-  for (set<Key>::iterator it = txn->readset_.begin();
-       it != txn->readset_.end(); ++it) {
+  for (set<Key>::iterator it = txn->writeset_.begin();
+       it != txn->writeset_.end(); ++it) {
 		
 		storage_->Lock(*it);
   }
 }
 
 void TxnProcessor::MVCCExecuteTxn(Txn* txn){
+
+  Value res;
+  bool isSuccess;
+
+  for (set<Key>::iterator it = txn->readset_.begin();
+       it != txn->readset_.end(); ++it) {
+		
+    if (storage_->Read(*it, &res, txn->unique_id_))
+      txn->reads_[*it] = res;
+		
+  }
+
+  MVCCLockWriteKeys(txn);
+  for (set<Key>::iterator it = txn->writeset_.begin();
+       it != txn->writeset_.end(); ++it) {
+		
+    if (storage_->Read(*it, &res, txn->unique_id_))
+      txn->reads_[*it] = res;
+		
+  }
+  //Unlock
+
+  txn->Run();
+
+  MVCCLockWriteKeys(txn);
+  isSuccess = MVCCCheckWrites(txn);
+  
+  if(isSuccess){
+    for (map<Key, Value>::iterator it = txn->writes_.begin();
+				 it != txn->writes_.end(); ++it) {
+			storage_->Write(it->first, it->second, txn->unique_id_);
+		}
+
+    //Unlock
+    txn_results_.Push(txn);
+
+  }else{
+    //Unlock
+    // Clean up transaction
+	  txn->reads_.clear();
+	  txn->writes_.clear();
+	  txn->status_ = INCOMPLETE;
+
+	  // Restart transaction
+	  mutex_.Lock();
+	  txn->unique_id_ = next_unique_id_;
+	  next_unique_id_++;
+	  txn_requests_.Push(txn);
+	  mutex_.Unlock(); 
+  }
+
 
 }
 
@@ -379,8 +430,17 @@ void TxnProcessor::RunMVCCScheduler() {
   // [For now, run serial scheduler in order to make it through the test
   // suite]
 
+  Txn* txn;
+	while (tp_.Active()) {
+    if (txn_requests_.Pop(&txn)) {
+			tp_.RunTask(new Method<TxnProcessor, void, Txn*>(
+						this,
+						&TxnProcessor::MVCCExecuteTxn,
+						txn));
+		}
+	}
 
-  RunSerialScheduler();
+
 }
 
 bool TxnProcessor::MVCCCheckWrites(Txn* txn){
