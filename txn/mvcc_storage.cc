@@ -48,7 +48,38 @@ bool MVCCStorage::Read(Key key, Value* result, int txn_unique_id) {
   // Hint: Iterate the version_lists and return the verion whose write timestamp
   // (version_id) is the largest write timestamp less than or equal to txn_unique_id.
   
-  return true;
+  deque<Version*>* version_of_key = mvcc_data_[key];
+
+  Version * max_timestamp;
+
+  for (deque<Version*>::iterator it = version_of_key->begin(); it!=version_of_key->end(); ++it){
+		  
+    Version* v = *it;
+	
+    if(v->version_id_ <= txn_unique_id){
+      
+      if(max_timestamp != NULL){
+        if(v->version_id_ > max_timestamp->version_id_){
+          max_timestamp = v;
+        }
+      }else{
+        max_timestamp = v;
+      }
+    }
+  }
+
+  if(max_timestamp != NULL){
+		*result = max_timestamp->value_;
+
+		if(max_timestamp->max_read_id_ < txn_unique_id){
+			max_timestamp->max_read_id_ = txn_unique_id;
+    }
+		return true;
+
+	}else{
+		return false;
+  }
+
 }
 
 
