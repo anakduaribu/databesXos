@@ -260,15 +260,86 @@ void TxnProcessor::ApplyWrites(Txn* txn) {
   }
 }
 
+bool TxnProcessor::TxnFinishTimeValidation(const Txn &txn) const{
+  bool valid=true;
+  //check readset
+  for (auto&& record : txn.readset_) {
+    
+    if ( txn.occ_start_time_ < storage_->Timestamp(record)){
+      valid = false;
+    }
+  }
+  
+  //check readset
+  if (valid) {
+    for (auto&& record : txn.writeset_) {
+      
+      if ( txn.occ_start_time_ < storage_->Timestamp(record)){
+        valid = false;
+      }
+
+    }
+  }
+
+  return valid;
+}
+
+void TxnProcessor::CleanUpTxn(Txn *checked_txn) {
+    checked_txn->reads_.empty();
+    checked_txn->writes_.empty();
+    checked_txn->status_ = INCOMPLETE;
+}
+
+void TxnProcessor::RestartTxn(Txn *txn, Txn *checked_txn) {
+    mutex_.Lock();
+    txn->unique_id_ = next_unique_id_;
+    next_unique_id_++;
+    txn_requests_.Push(checked_txn);
+    mutex_.Unlock();
+}
 void TxnProcessor::RunOCCScheduler() {
   // CPSC 438/538:
   //
   // Implement this method!
-  //
+  // For transaction request
+  Txn *txn_request;
+  while(tp_.Active()) {
+    // new transaction request
+    if (txn_requests_.Pop(&txn_request)) {
+      //pass to execution thread
+      tp_.RunTask(new Method<TxnProcessor, void, Txn*>(
+        this, &TxnProcessor::ExecuteTxn, txn_request));
+    }
+
+    //dealing with finished transaction
+    Txn *finished_txn;  
+    while (completed_txns_.Pop(&finished_txn)) {
+      //check is the record was last updated 
+      //AFTER this transaction's start time or not
+      bool valid = TxnFinishTimeValidation(*finished_txn);
+
+    if (valid){
+      //commit transaction
+      ApplyWrites(finished_txn);
+      txn_request->status_ = COMMITTED;
+    }
+    else {
+      CleanUpTxn(finished_txn);
+      RestartTxn(txn_request,finished_txn);
+    }
+
+    txn_results_.Push(finished_txn);
+
+
+  }
+
+
+
+  }
   // [For now, run serial scheduler in order to make it through the test
   // suite]
 
-  RunSerialScheduler();
+  //RunSerialScheduler();
 }
 
 void TxnProcessor::RunOCCParallelScheduler() {
@@ -312,3 +383,15 @@ void TxnProcessor::RunMVCCScheduler() {
   RunSerialScheduler();
 }
 
+bool TxnProcessor::MVCCCheckWrites(const Txn &txn) const{
+  for (auto&& key : txn.writeset_) {
+    storage_->Lock(key);
+  }
+
+  for (auto&& key : txn.writeset_) {
+    if (!storage_->CheckWrite(key, txn.unique_id_))
+      return false;
+  }
+
+  return true;
+}
