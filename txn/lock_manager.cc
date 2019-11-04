@@ -63,7 +63,7 @@ void LockManagerA::Release(Txn* txn, const Key& key) {
   for (itr = req->begin(); itr != req->end(); itr++) {
     if (itr->txn_ == txn) {
       if (req->front().txn_ == txn) {
-        cek = true;
+        cek = false;
         req->erase(itr);
       }
       // cek = (req->front().txn_ == txn);
@@ -76,9 +76,9 @@ void LockManagerA::Release(Txn* txn, const Key& key) {
   if (req->size() >= 1 && cek) {
     Txn *n_lock = req->front().txn_;
     txn_waits_[n_lock]--;
-    if (txn_waits_[n_lock] <= 0) {
+    if (txn_waits_[n_lock] == 0) {
       ready_txns_->push_back(n_lock);
-      txn_waits_.erase(n_lock);
+      // txn_waits_.erase(n_lock);
     }
     // if (--txn_waits_[n_lock] == 0) ready_txns_->push_back(n_lock);
   }
